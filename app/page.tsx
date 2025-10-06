@@ -93,8 +93,8 @@ export default function Home() {
             student[header] = value;
           });
 
-          // Only add student if it has required fields
-          if (student.FirstName && student.LastName) {
+          // Add student if it has at least some data (FirstName OR LastName OR Email)
+          if (student.FirstName || student.LastName || student.Email) {
             studentsData.push(student as Student);
           }
         }
@@ -144,8 +144,8 @@ export default function Home() {
             student[header] = value;
           });
           
-          // Only add student if it has required fields
-          if (student.FirstName && student.LastName) {
+          // Add student if it has at least some data (FirstName OR LastName OR Email)
+          if (student.FirstName || student.LastName || student.Email) {
             studentsData.push(student as Student);
           }
         }
@@ -202,9 +202,9 @@ export default function Home() {
     if (!template) return;
 
     let message = template.content
-      .replace('{name}', selectedStudent.FirstName)
-      .replace('{program}', selectedStudent.Program_of_Interest__c)
-      .replace('{country}', selectedStudent.Country);
+      .replace('{name}', selectedStudent.FirstName || 'there')
+      .replace('{program}', selectedStudent.Program_of_Interest__c || 'your program')
+      .replace('{country}', selectedStudent.Country || 'your country');
 
     setCustomMessage(message);
     setSelectedTemplate(templateId);
@@ -213,7 +213,17 @@ export default function Home() {
   const sendToWhatsApp = () => {
     if (!selectedStudent || !customMessage) return;
 
+    if (!selectedStudent.Phone) {
+      alert('No phone number available for this student.');
+      return;
+    }
+
     const phone = selectedStudent.Phone.replace(/\D/g, '');
+    if (!phone) {
+      alert('Invalid phone number format.');
+      return;
+    }
+
     const encodedMessage = encodeURIComponent(customMessage);
     const whatsappUrl = `https://wa.me/${phone}?text=${encodedMessage}`;
     
@@ -235,8 +245,8 @@ export default function Home() {
       action = 'Sent initial welcome message';
     }
 
-    const program = selectedStudent.Program_of_Interest__c;
-    const log = `[${timestamp}] ${action} via WhatsApp regarding ${program} program. Student engaged, awaiting response.`;
+    const program = selectedStudent.Program_of_Interest__c || 'their program of interest';
+    const log = `[${timestamp}] ${action} via WhatsApp regarding ${program}${selectedStudent.Program_of_Interest__c ? ' program' : ''}. Student engaged, awaiting response.`;
     
     return log;
   };
@@ -352,7 +362,10 @@ export default function Home() {
 
             <div className="mt-6 bg-gray-100 rounded-lg p-4">
               <p className="text-sm text-gray-700">
-                <strong>Required fields:</strong> FirstName, LastName, Phone, Email, Country, Program_of_Interest__c
+                <strong>Recommended fields:</strong> FirstName, LastName, Email, Phone, Country, Program_of_Interest__c, Status, Last_Interaction_Log__c
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                Note: Students with at least FirstName, LastName, or Email will be loaded
               </p>
             </div>
           </div>
@@ -393,21 +406,23 @@ export default function Home() {
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <h3 className="font-medium text-gray-900 text-sm">
-                          {student.FirstName} {student.LastName}
+                          {student.FirstName || 'N/A'} {student.LastName || 'N/A'}
                         </h3>
-                        <p className="text-xs text-gray-600 mt-1">{student.Country}</p>
+                        <p className="text-xs text-gray-600 mt-1">{student.Country || 'N/A'}</p>
                         <p className="text-xs text-gray-500 mt-1 line-clamp-1">
-                          {student.Program_of_Interest__c}
+                          {student.Program_of_Interest__c || 'N/A'}
                         </p>
                       </div>
                       <span
                         className={`px-2 py-0.5 text-xs font-medium rounded ${
                           student.Status === 'New'
                             ? 'bg-gray-200 text-gray-700'
-                            : 'bg-gray-900 text-white'
+                            : student.Status
+                            ? 'bg-gray-900 text-white'
+                            : 'bg-gray-200 text-gray-700'
                         }`}
                       >
-                        {student.Status}
+                        {student.Status || 'Unknown'}
                       </span>
                     </div>
                   </div>
@@ -422,28 +437,28 @@ export default function Home() {
                   {/* Student Info Card */}
                   <div className="bg-white rounded-lg border border-gray-200 p-6">
                     <h2 className="text-xl font-semibold text-gray-900 mb-5">
-                      {selectedStudent.FirstName} {selectedStudent.LastName}
+                      {selectedStudent.FirstName || 'N/A'} {selectedStudent.LastName || 'N/A'}
                     </h2>
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
                         <p className="text-xs text-gray-500 mb-1">Email</p>
-                        <p className="font-medium text-gray-900">{selectedStudent.Email}</p>
+                        <p className="font-medium text-gray-900">{selectedStudent.Email || 'N/A'}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-500 mb-1">Phone</p>
-                        <p className="font-medium text-gray-900">{selectedStudent.Phone}</p>
+                        <p className="font-medium text-gray-900">{selectedStudent.Phone || 'N/A'}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-500 mb-1">Country</p>
-                        <p className="font-medium text-gray-900">{selectedStudent.Country}</p>
+                        <p className="font-medium text-gray-900">{selectedStudent.Country || 'N/A'}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-500 mb-1">Lead Source</p>
-                        <p className="font-medium text-gray-900">{selectedStudent.LeadSource}</p>
+                        <p className="font-medium text-gray-900">{selectedStudent.LeadSource || 'N/A'}</p>
                       </div>
                       <div className="col-span-2">
                         <p className="text-xs text-gray-500 mb-1">Program of Interest</p>
-                        <p className="font-medium text-gray-900">{selectedStudent.Program_of_Interest__c}</p>
+                        <p className="font-medium text-gray-900">{selectedStudent.Program_of_Interest__c || 'N/A'}</p>
                       </div>
                     </div>
 
