@@ -82,12 +82,10 @@ export default function Home() {
           headers.forEach((header, index) => {
             let value = row[index] !== undefined && row[index] !== null ? String(row[index]).trim() : '';
             
-            // Handle phone number formatting
+            // Handle phone number - keep as string, just remove non-digits for formatting
             if (header === 'Phone' && value) {
-              const num = parseFloat(value);
-              if (!isNaN(num)) {
-                value = num.toString().replace(/\D/g, '');
-              }
+              // Remove any non-digit characters but keep the original string value
+              value = value.replace(/\D/g, '');
             }
             
             student[header] = value;
@@ -133,12 +131,10 @@ export default function Home() {
           headers.forEach((header, index) => {
             let value = values[index] || '';
             
-            // Handle phone number formatting (convert scientific notation)
+            // Handle phone number - keep as string, just remove non-digits for formatting
             if (header === 'Phone' && value) {
-              const num = parseFloat(value);
-              if (!isNaN(num)) {
-                value = num.toString().replace(/\D/g, '');
-              }
+              // Remove any non-digit characters but keep the original string value
+              value = value.replace(/\D/g, '');
             }
             
             student[header] = value;
