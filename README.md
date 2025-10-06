@@ -97,9 +97,9 @@ npm start
 
 ## 📝 Using the Application
 
-### Step 1: Prepare Your CSV
+### Step 1: Prepare Your File
 
-Export from Salesforce with these fields:
+Export from Salesforce (CSV or Excel) with these fields:
 - `FirstName`
 - `LastName`
 - `Email`
@@ -110,12 +110,13 @@ Export from Salesforce with these fields:
 - `Status` (New, Contacted, etc.)
 - `LeadSource`
 
-**Note**: A sample CSV file (`sample-students.csv`) is included for testing.
+**Note**: Sample files (`sample-students.csv` and `sample-students.xlsx`) are included for testing.
 
 ### Step 2: Upload
 
-1. Click "Upload" or drag CSV file
-2. Data loads instantly (stays local, never sent to server)
+1. Click "Upload" or **drag and drop** your file
+2. Supports CSV, TSV, and Excel (XLSX/XLS) formats
+3. Data loads instantly (stays local, never sent to server)
 
 ### Step 3: Select Student
 

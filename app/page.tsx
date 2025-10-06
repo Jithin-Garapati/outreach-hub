@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import * as XLSX from 'xlsx';
 
 // Types
 interface Student {
@@ -53,62 +54,145 @@ export default function Home() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showUploadArea, setShowUploadArea] = useState(true);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const processFile = (file: File) => {
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+
+    if (fileExtension === 'xlsx' || fileExtension === 'xls') {
+      // Handle Excel files
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const data = e.target?.result;
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 }) as any[][];
+
+        if (jsonData.length < 2) return;
+
+        const headers = jsonData[0].map((h: any) => String(h).trim());
+        const studentsData: Student[] = [];
+
+        for (let i = 1; i < jsonData.length; i++) {
+          const row = jsonData[i];
+          if (!row || row.length === 0) continue;
+
+          const student: any = {};
+          headers.forEach((header, index) => {
+            let value = row[index] !== undefined && row[index] !== null ? String(row[index]).trim() : '';
+            
+            // Handle phone number formatting
+            if (header === 'Phone' && value) {
+              const num = parseFloat(value);
+              if (!isNaN(num)) {
+                value = num.toString().replace(/\D/g, '');
+              }
+            }
+            
+            student[header] = value;
+          });
+
+          // Only add student if it has required fields
+          if (student.FirstName && student.LastName) {
+            studentsData.push(student as Student);
+          }
+        }
+
+        console.log('Parsed students:', studentsData);
+        setStudents(studentsData);
+        setShowUploadArea(false);
+        if (studentsData.length > 0) {
+          setSelectedStudent(studentsData[0]);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      // Handle CSV/TSV files
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target?.result as string;
+        const lines = text.split(/\r?\n/).filter(line => line.trim());
+        
+        if (lines.length < 2) return;
+
+        // Auto-detect delimiter (tab or comma)
+        const firstLine = lines[0];
+        const delimiter = firstLine.includes('\t') ? '\t' : ',';
+        
+        const headers = firstLine.split(delimiter).map(h => h.trim().replace(/^"|"$/g, ''));
+        const studentsData: Student[] = [];
+
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i];
+          if (!line.trim()) continue;
+          
+          const values = line.split(delimiter).map(v => v.trim().replace(/^"|"$/g, ''));
+          const student: any = {};
+          
+          headers.forEach((header, index) => {
+            let value = values[index] || '';
+            
+            // Handle phone number formatting (convert scientific notation)
+            if (header === 'Phone' && value) {
+              const num = parseFloat(value);
+              if (!isNaN(num)) {
+                value = num.toString().replace(/\D/g, '');
+              }
+            }
+            
+            student[header] = value;
+          });
+          
+          // Only add student if it has required fields
+          if (student.FirstName && student.LastName) {
+            studentsData.push(student as Student);
+          }
+        }
+
+        console.log('Parsed students:', studentsData);
+        setStudents(studentsData);
+        setShowUploadArea(false);
+        if (studentsData.length > 0) {
+          setSelectedStudent(studentsData[0]);
+        }
+      };
+      reader.readAsText(file);
+    }
+  };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    processFile(file);
+  };
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const text = e.target?.result as string;
-      const lines = text.split(/\r?\n/).filter(line => line.trim());
-      
-      if (lines.length < 2) return;
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
 
-      // Auto-detect delimiter (tab or comma)
-      const firstLine = lines[0];
-      const delimiter = firstLine.includes('\t') ? '\t' : ',';
-      
-      const headers = firstLine.split(delimiter).map(h => h.trim().replace(/^"|"$/g, ''));
-      const studentsData: Student[] = [];
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
 
-      for (let i = 1; i < lines.length; i++) {
-        const line = lines[i];
-        if (!line.trim()) continue;
-        
-        const values = line.split(delimiter).map(v => v.trim().replace(/^"|"$/g, ''));
-        const student: any = {};
-        
-        headers.forEach((header, index) => {
-          let value = values[index] || '';
-          
-          // Handle phone number formatting (convert scientific notation)
-          if (header === 'Phone' && value) {
-            const num = parseFloat(value);
-            if (!isNaN(num)) {
-              value = num.toString().replace(/\D/g, '');
-            }
-          }
-          
-          student[header] = value;
-        });
-        
-        // Only add student if it has required fields
-        if (student.FirstName && student.LastName) {
-          studentsData.push(student as Student);
-        }
-      }
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
 
-      console.log('Parsed students:', studentsData); // Debug log
-      setStudents(studentsData);
-      setShowUploadArea(false);
-      if (studentsData.length > 0) {
-        setSelectedStudent(studentsData[0]);
-      }
-    };
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
 
-    reader.readAsText(file);
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      processFile(files[0]);
+    }
   };
 
   const applyTemplate = (templateId: string) => {
@@ -229,11 +313,21 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="bg-white rounded-lg border-2 border-dashed border-gray-300 p-16 text-center hover:border-gray-400 transition-colors">
+            <div 
+              className={`bg-white rounded-lg border-2 border-dashed p-16 text-center transition-colors ${
+                isDragging 
+                  ? 'border-gray-900 bg-gray-50' 
+                  : 'border-gray-300 hover:border-gray-400'
+              }`}
+              onDragEnter={handleDragEnter}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".csv,.txt,.tsv"
+                accept=".csv,.txt,.tsv,.xlsx,.xls"
                 onChange={handleFileUpload}
                 className="hidden"
                 id="file-upload"
@@ -248,10 +342,10 @@ export default function Home() {
                   </svg>
                 </div>
                 <span className="text-base font-medium text-gray-900 mb-1">
-                  Click to upload or drag and drop
+                  {isDragging ? 'Drop file here' : 'Click to upload or drag and drop'}
                 </span>
                 <span className="text-sm text-gray-500">
-                  CSV or TSV file from Salesforce
+                  CSV, TSV, or Excel (XLSX) file from Salesforce
                 </span>
               </label>
             </div>
