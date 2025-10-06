@@ -3,14 +3,21 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
+    "dev": "next dev",
+    "build": "next build",
     "start": "next start"
   },
   "dependencies": {
+    "@ai-sdk/google": "^2.0.17",
+    "@google/generative-ai": "^0.24.1",
+    "ai": "^5.0.60",
+    "buffer": "^6.0.3",
     "next": "15.5.4",
+    "process": "^0.11.10",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "stream-browserify": "^3.0.0",
+    "util": "^0.12.5",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
@@ -19,6 +26,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "webpack": "^5.102.0"
   }
 }
